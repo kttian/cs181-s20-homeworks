@@ -2,12 +2,14 @@
 
 \course{CS181-S20}
 \assignment{Assignment \#4}
-\duedate{11:59pm March 27, 2020} 
+\duedate{11:59pm March 27, 2020}
 
 \usepackage[OT1]{fontenc}
 \usepackage[colorlinks,citecolor=blue,urlcolor=blue]{hyperref}
-\usepackage[pdftex]{graphicx}
-\usepackage{graphicx}
+%\usepackage[pdftex]{graphicx}
+\usepackage[final]{graphicx}
+%\usepackage{graphicx}
+\usepackage{subfig}
 \usepackage{caption}
 \usepackage{fullpage}
 \usepackage{soul}
@@ -17,6 +19,8 @@
 \usepackage{todonotes}
 \usepackage{listings}
 \usepackage{common}
+\usepackage{float}
+
 
 \usepackage[mmddyyyy,hhmmss]{datetime}
 
@@ -96,7 +100,43 @@ the decision boundary. Justify your answer.
 
 \end{problem}
 
-% \subsection*{Solution}
+\subsection*{Solution}
+
+\begin{enumerate}
+    \item Here is a plot of $x_2$ on the vertical axis and $x_1 = x$ on the horizontal axis. By inspection, the boundary should be at the line $x_2 = -1$, where points below are classified as negative and points above the line are classified as positive. The transformed points are $(-3,30),(-2,0),(-1,-2),(0,0),(1,-2),(2,0),(3,30)$.
+    
+    \includegraphics[width = 3in]{IMG_2052.jpg}
+    
+    \item The margin is the minimum distance to boundary, which is 1, since we have points at $x_2 = 0$ and $x_2 = -2$.
+    
+    \item Since the boundary is $x_2 = -1$, a unit vector orthogonal to that line is vertical, such as $\vec{w} = \langle 0,1 \rangle$.
+    \item A point on the boundary should have margin 0, we can plug in a point $\phi(x) = p$ on the boundary $x_2 = -1$, such as $p = \langle x_1, -1 \rangle$, to solve for $\vec{w}$ and $w_0$ generally. While we know the direction of $\vec{w}$, the magnitude could be scaled by a factor of $k$, where $k$ is a positive real number. Then, we have
+    \begin{align*}
+        h( \phi(x) ; w, w0) = w^T \phi(x) + w_0 &= 0 \\
+        k \langle 0,1 \rangle \cdot \langle x_1, -1 \rangle + w_0 &= 0 \\
+        -k + w_0 &= 0 \implies w_0 = k.
+    \end{align*}
+    Then, a general solution for $(\boldw, w_0)$ is $\boldw = \langle 0, k \rangle$ and $w_0 = k$ for $k > 0$.
+    \item Now, plugging a support vector should give us $y_n(\boldw^T \phi(x_n) + w_0) = 1$. We can plug in the support vector $(-1,-2)$ and see
+    \begin{align*}
+        -1(k \langle 0,1 \rangle \cdot \langle -1,-2 \rangle + k) &= 1 \\
+        k(-2) + k &= -1 \\
+        k(-1) &= - 1 \implies k = 1,
+    \end{align*}
+    so the optimal solution is $\boldw = \langle 0, 1 \rangle$ and $w_0 = 1$.
+    
+    \item Since $\boldw = \langle 0,k \rangle = \langle 0, 1 \rangle$ and $w_0 = k = 1$, we have that the discriminant is $h(\phi(x) ; \boldw, w_0) = \langle 0, 1 \rangle^T \phi(x) + 1$. 
+
+    \item The support vectors are $(x_i, y_i) = (-2, +1), (-1, -1), (0,+1),(1,-1),(2,+1)$, which give us $\phi(x_i) = (-2, 0), (-1,-2), (0,0), (1,-2), (2,0)$. Let us verify that $y_n ( \langle 0,1 \rangle \cdot \phi(x_n) + 1) = 1$ for all support vectors.
+    \begin{align*}
+        (-2,0)& \implies +1 (0 + 1) = 1 \\
+        (-1,-2)& \implies -1(-2 + 1) = 1 \\
+        (0,0)& \implies +1(0 + 1) = 1 \\
+        (1,-2)& \implies -1(-2 + 1) = 1 \\
+        (2,0)& \implies +1(0 + 1) = 1
+    \end{align*}
+\end{enumerate}
+
 
 % \newpage
 
@@ -175,9 +215,98 @@ The code given in \texttt{T4\_P2.py} loads the images into your environment into
 
 \end{problem}
 
-% \subsection*{Solution}
+\subsection*{Solution}
 
-\newpage
+\begin{enumerate}
+    %1
+    \item We plot the K-means objective function below (Loss vs. Iterations). It is indeed decreasing!
+    
+    \includegraphics[width=0.5\linewidth]{Kmeans_Loss_3.png}
+    
+    %2
+    \item We plot the final K-means objective value as a function of $K$ with error bars below. The final value of the objective decreases with $K$ as expected, since more clusters means that points will be on average closer to a cluster center. We also observed that the standard deviation also seems to decrease slightly, which makes sense since more clusters means that there is less room for variation for the cluster.
+    
+    \includegraphics[width=0.5\linewidth]{Errorbars_A.png}
+    \newpage 
+    %3
+    \item Figure \ref{fig:kmeans} shows the cluster centers for $K = 10$ and 5 random restarts.
+
+    \begin{figure}[H]
+    \centering
+    \subfloat[Init 1]{\includegraphics[width=0.33\linewidth]{kmeans_centers_k10_run0.png}}
+    \subfloat[Init 2]{\includegraphics[width=0.33\linewidth]{kmeans_centers_k10_run1.png}}
+    \subfloat[Init 3]{\includegraphics[width=0.33\linewidth]{kmeans_centers_k10_run2.png}} \\
+    \subfloat[Init 4]{\includegraphics[width=0.33\linewidth]{kmeans_centers_k10_run3.png}}
+    \subfloat[Init 5]{\includegraphics[width=0.33\linewidth]{kmeans_centers_k10_run4.png}}
+    \caption{K-Means Cluster Centers for 5 Random Restarts}
+    \label{fig:kmeans}
+    \end{figure}
+    
+    %4
+    \newpage
+    \item We first standardize the data, then plot the cluster centers below in Figure \ref{fig:norm}. Because of the normalization, some of the pixels are varying shades of gray instead of black. The digits themselves do look pretty clear, which means the clustering algorithm does quite well, just as well as the normal K-Means if not better.
+    
+    \begin{figure}[H]
+    \centering
+    \subfloat[Init 1] {\includegraphics[width=0.33\linewidth]{kmeans_centers_normed_k10_run0.png}}
+    \subfloat[Init 2] {\includegraphics[width=0.33\linewidth]{kmeans_centers_normed_k10_run1.png}}
+    \subfloat[Init 3] {\includegraphics[width=0.33\linewidth]{kmeans_centers_normed_k10_run2.png}} \\
+    \subfloat[Init 4] {\includegraphics[width=0.33\linewidth]{kmeans_centers_normed_k10_run3.png}}
+    \subfloat[Init 5] {\includegraphics[width=0.33\linewidth]{kmeans_centers_normed_k10_run4.png}}
+    
+    \caption{Cluster Centers for K-Means after Normalized Data, 5 Random Initializations}
+    \label{fig:norm}
+    \end{figure}
+    
+    %5
+    \item Figure \ref{fig:HAC} shows the cluster centers produced by HAC with min, max, and centroid-based linkages. Comparing the HAC images to the K-Means images, we can see that HAC results for all three linkages appear worse than K-Means. Specifically, the HAC clusters are less able to pick out true digits. Many clusters seem blurrier than K-Means, and some clusters are too blurry to even look like a digit, likely because those clusters contain images of multiple digits.
+    
+    \begin{figure}[H]
+    \centering
+    \subfloat[Min-Linkage HAC] {\includegraphics[width=0.33\linewidth]{min_hac_clusters_A.png}}
+    \subfloat[Max-Linkage HAC] {\includegraphics[width=0.33\linewidth]{max_hac_clusters_A.png}}
+    \subfloat[Centroid-Linkage HAC] {\includegraphics[width=0.33\linewidth]{centroid_hac_clusters_A.png}}
+    
+    \caption{Cluster Centers for HAC}
+    \label{fig:HAC}
+    \end{figure}
+    
+    %6
+    \item Figure \ref{fig:HAC-dist} shows the 3 distance vs. merges plots. The plots do suggest natural cut points! The cut point appears to be close to 300 or between 250 and 300 for all three graphs. The distance keeps increasing as number of merges increases, and at some point approximately around 275, the distance starts increasing much faster (the slope of the graph becomes greater). This suggests that the clusters merged at the end after 275 iterations are far apart; perhaps they do not actually naturally belong to the same cluster, and the HAC is simply forcing them to be merged together.
+    \begin{figure}[H]
+    \centering
+    \subfloat[Min-Hac Distance vs. \#Merges]{\includegraphics[width=0.3\linewidth]{min_hac_distance_vs_merge.png}}
+    \subfloat[Max-Hac Distance vs. \#Merges]{\includegraphics[width=0.3\linewidth]{max_hac_distance_vs_merge.png}}
+    \subfloat[Centroid-Hac Dist vs. \#Merges] {\includegraphics[width=0.3\linewidth]{centroid_hac_distance_vs_merge.png}}
+    \caption{Cluster Centers for 5 Restarts}
+    \label{fig:HAC-dist}
+    \end{figure}
+    
+    \item Here are the confusion matrices for the four clustering methods (Figure \ref{fig:heatmaps}). We can tell that K-Means and Max-HAC cluster the digits better than Min-HAC and Centroid-HAC, with K-Means doing the best and Centroid-HAC doing the worst. In a perfect clustering, we would see mostly dark heatmaps with 10 light squares, one light square per row (meaning that each cluster picked up on a single and distinct true label).
+    
+    We see that K-means is pretty good, for example, cluster 5 cleanly picks out the digit 6, cluster 4 strongly picks out the digit 8, and cluster 9 picks out the digit 0, etc. Each row usually has one very light square, and sometimes a couple kind-of light squares, but overall, the clusters identify digits well.
+    
+    Max-HAC has some good clusters, such as cluster 3 which picked out the digit 6, but it also has poor clusters, such as 8 and 9 which didn't pick up any digits. Cluster 4 seems to pick out 1s well but also picks up additional noise from other digits.
+    
+    On the other hand, the bright row in cluster 0 indicates that Min-HAC and Centroid-HAC seem to just drop most digits into one cluster while leaving few data points to the other clusters.
+    
+    Examining the confusion matrix heatmaps of assigned cluster vs. true label in this way is a pretty reasonable evaluation metric for clustering. We can tell how consolidated or noisy the clustering was based on the patterns of light squares. Essentially, we can see how close the result is to a perfect clustering.
+    \begin{figure}[H]
+    \centering
+    
+    \subfloat[Confusion Matrix for K-Means Classifier] {\includegraphics[width=0.4\linewidth]{kmeans_confusion.png}}
+    \subfloat[Confusion Matrix for Min-HAC] {\includegraphics[width=0.4\linewidth]{hac_min_confusion.png}} \\
+    \subfloat[Confusion Matrix for Max-HAC] {\includegraphics[width=0.4\linewidth]{hac_max_confusion.png}}
+    \subfloat[Confusion Matrix for Centroid-HAC] {\includegraphics[width=0.4\linewidth]{hac_centroid_confusion.png}}
+    
+    \caption{Confusion Matrix Heatmaps for Four Clustering Methods}
+    \label{fig:heatmaps}
+    \end{figure}
+    
+    
+\end{enumerate}
+
+\pagebreak
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Problem 3
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,18 +322,27 @@ We expect clear, concise, and thoughtful engagement with this question, which in
 
 \end{problem}
 
-% \subsection*{Solution}
+\subsection*{Solution}
+
+The goal of the algorithm should be to allocate economic resources for various health providers fairly. By fair, we mean it allocates proportional to the needs of the populations, without wrongful discrimination, especially not against protected categories. Even though there is no disparate treatment since intent was good, there is the possibility of unintentional disparate impact. In order to determine whether the algorithm will be fair, we should comprehensively consider a couple of questions:
+
+Will the algorithm learn just decisions from our input data? While algorithms themselves are objective and quantitative (this may seem to be fair), the input data influences the resulting model hugely and could produce unintended unfair results. We want to make sure that the model is not picking up on an unintended proxy for prediction. For example, if we train a model based on how resources have been allocated in the past, we should ask ourselves, \textbf{is the past history of resource allocation a fair set of training labels?} Perhaps wealthier regions have always used more resources; then a model trained on these set of labels would learn to allocate more resources to wealthier resources instead of true need, only to reinforce existing biases in data, creating a feedback loop that exacerbates epistemic problem of wealth inequality. 
+
+How do you decide which person or which population is more in need? Answering these questions will help us ensure that our training labels are fair. And that the result from training does not wrongfully discriminate. Our model inevitably needs to discriminate between healthcare providers in order to decide how much to allocate, but we don’t want to wrongfully discriminate against certain populations. In particular, we should take steps to check, \textbf{is our training data biased?} Take the current COVID-19 outbreak as an example, where your goal is sending resources to the most at-risk populations. However, predicting where COVID-19 will hit hardest (and therefore, where to send resources) is extremely difficult given the incomplete and biased data that we have on the current situation. For example in South Korea, the outbreak spread rapidly through the Shincheonji Church where a lot of members who interact with each other are young women in their 20s–30s. In response, more and more Shincheonji Church members were tested, further biasing the number of COVID-19 cases to over-represent young women. Then, the data might strongly suggest that young women are most at risk for getting COVID-19, when in reality the people around them whom they spread the disease to might be less likely to get tested but more at risk. This might then hypothetically divert resources away from elderly populations who need resources more but weren't as rigorously tested.
+
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Name and Calibration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection*{Name}
+Katherine Tian
 
 \subsection*{Collaborators and Resources}
 Whom did you work with, and did you use any resources beyond cs181-textbook and your notes?
 
 \subsection*{Calibration}
 Approximately how long did this homework take you to complete (in hours)? 
-
+20
 \end{document}
+

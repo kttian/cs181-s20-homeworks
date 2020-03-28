@@ -17,98 +17,715 @@ small_labels = np.load("data/small_dataset_labels.npy").astype(int)
 # Also, you must cluster all of the images in the provided dataset, so your code should be fast enough to do that. 
 
 class KMeans(object):
-    # K is the K in KMeans
-    def __init__(self, K):
-        self.K = K
-        self.mu = np.zeros(shape=(K,5)) #an array[K][D] of cluster centers
-        self.z = np.zeros(shape=(5,K))  #an array[N][K] of cluster assignments
-        self.obj = [] #list of (iter,objective)
+	# K is the K in KMeans
+	def __init__(self, K):
+		self.K = K
+		self.mu = np.zeros(shape=(K,5)) #an array[K][D] of cluster centers
+		self.z = np.zeros(shape=(5,K))  #an array[N][K] of cluster assignments
+		self.obj = [] #list of (iter,objective)
 
-    def loss(self,X):
-        l = 0
-        N = X.shape[0]
-        K = self.K
-        for n in range(N):
-            for k in range(K):
-                if(self.z[n][k]):
-                    l += distance.euclidean(X[n],self.mu[k])
-        return l
+	def loss(self,X):
+		l = 0
+		N = X.shape[0]
+		K = self.K
+		for n in range(N):
+			for k in range(K):
+				if(self.z[n][k]):
+					l += distance.euclidean(X[n],self.mu[k])
+		return l
 
-    # X is a (N x 28 x 28) array where 28x28 is the dimensions of each of the N images.
-    def fit(self, X):
-        N = X.shape[0]
-        D = X.shape[1]
-        K = self.K
-        self.mu = np.zeros(shape=(K,D))
-        self.z = np.zeros(shape=(N,K))
+	# X is a (N x 28 x 28) array where 28x28 is the dimensions of each of the N images.
+	def fit(self, X):
+		N = X.shape[0]
+		D = X.shape[1]
+		K = self.K
+		self.mu = np.zeros(shape=(K,D))
+		self.z = np.zeros(shape=(N,K))
 
-        #random assign
-        for i in range(N):
-            k = random.randint(0,9)
-            self.z[i][k] = 1
+		#random assign
+		for i in range(N):
+			k = random.randint(0,K-1)
+			self.z[i][k] = 1
 
-        count = 0
-        max_iter = 100
-        converged = False
-        self.obj = []
-        while(count <= max_iter and not converged):
-            count += 1
-            #update centers, for k in range(K):
-            Nk = np.sum(self.z,axis=0)
-            #print("Nk",Nk)
-            #print(np.sum(Nk))
-            self.mu = np.dot(np.transpose(self.z),X)
-            # now divide each row k by Nk[k]
-            for k in range(K):
-                self.mu[k] = np.divide(self.mu[k], Nk[k])
-            #print(X)
-            #print(self.mu)
+		count = 0
+		max_iter = 100
+		converged = False
+		self.obj = []
+		while(count <= max_iter and not converged):
+			count += 1
+			#update centers, for k in range(K):
+			Nk = np.sum(self.z,axis=0)
+			#print("Nk",Nk)
+			#print(np.sum(Nk))
+			self.mu = np.dot(np.transpose(self.z),X)
+			# now divide each row k by Nk[k]
+			for k in range(K):
+				self.mu[k] = np.divide(self.mu[k], Nk[k])
+			#print(X)
+			#print(self.mu)
 
-            #update assignment, for n in range(N):
-            #self.z = np.zeros(shape=(N,K))
-            converged = True
-            for n in range(N):
-                min_dist = distance.euclidean(X[n],self.mu[0])
-                min_k = 0
-                for k in range(1,K):
-                    dk = distance.euclidean(X[n],self.mu[k])
-                    if dk < min_dist:
-                        min_dist = dk
-                        min_k = k
-                # set znk
-                if self.z[n][min_k] != 1:
-                    self.z[n] = np.zeros(K)
-                    self.z[n][min_k] = 1
-                    converged = False
+			#update assignment, for n in range(N):
+			#self.z = np.zeros(shape=(N,K))
+			converged = True
+			for n in range(N):
+				min_dist = distance.euclidean(X[n],self.mu[0])
+				min_k = 0
+				for k in range(1,K):
+					dk = distance.euclidean(X[n],self.mu[k])
+					if dk < min_dist:
+						min_dist = dk
+						min_k = k
+				# set znk
+				if self.z[n][min_k] != 1:
+					self.z[n] = np.zeros(K)
+					self.z[n][min_k] = 1
+					converged = False
 
-            l = self.loss(X)
-            self.obj.append((count,l))
-        print("count", count)
+			l = self.loss(X)
+			self.obj.append((count,l))
+		print("count", count)
 
-    def plot_obj(self):
-        px = [ob[0] for ob in self.obj]
-        py = [ob[1] for ob in self.obj]
-        plt.scatter(px,py)
-        plt.show()   
+	def plot_obj(self):
+		px = [ob[0] for ob in self.obj]
+		py = [ob[1] for ob in self.obj]
+		plt.scatter(px,py)
+		plt.savefig('kmeans_loss.png')
+		plt.show()
+		return (px[len(px)-1], py[len(py)-1])
 
-    # This should return the arrays for K images. Each image should represent the mean of each of the fitted clusters.
-    def get_mean_images(self):
-        return self.mu
+	def final_loss(self):
+		last = len(self.obj)-1
+		return self.obj[last][1]
 
-K = 10
-KMeansClassifier = KMeans(K=10)
-KMeansClassifier.fit(large_dataset)
-KMeansClassifier.plot_obj()
-mean_images = KMeansClassifier.get_mean_images()
+	# This should return the arrays for K images. Each image should represent the mean of each of the fitted clusters.
+	def get_mean_images(self):
+		return self.mu
 
-# This is how to plot an image. We ask that any images in your writeup be grayscale images, just as in this example.
-plt.figure()
-plt.imshow(mean_images[0].reshape(28,28), cmap='Greys_r')
-#plt.imshow(large_dataset[0].reshape(28,28), cmap='Greys_r')
-plt.show()
+	def get_cluster_assignments(self):
+		return self.z
+
+	# This is how to plot an image. We ask that any images in your writeup be grayscale images, just as in this example.
+	def plot_centers(self,normed,run_num):
+		mean_images = self.get_mean_images()
+		K = self.K
+
+		plot_title = "Cluster centers, K=" + str(self.K) + ", run " + str(run_num)
+		if normed:
+			plot_title += " (Normalized Data)"
+		fig_title = "kmeans_centers_k"+str(self.K)+"_run"+str(run_num)
+		if normed:
+			fig_title += "normed_"+fig_title
+		
+		fig = plt.figure()
+		# ro, co = number rows, number columns
+		if K == 5: ro, co = 1, 5
+		if K == 10: ro, co = 2, 5
+		if K == 20: ro, co = 4, 5
+		fig.suptitle(plot_title)
+		for i in range(self.K):
+			fig.add_subplot(ro,co,i+1)
+			plt.imshow(mean_images[i].reshape(28,28), cmap='Greys_r')
+		plt.savefig(fig_title + '.png')
+		#plt.show()
+		plt.close(fig)
+
+NUM_K = 3
+NUM_RUNS = 5
+
+# 2.2: 5 restarts for 3 different K, make error bar plots
+def error_bar(): 
+	K_list = [5,10,20]
+	errors = np.zeros(shape=(NUM_K,NUM_RUNS))
+	for k in range(NUM_K):
+		KMeansClassifier = KMeans(K=K_list[k])
+		for i in range(NUM_RUNS):
+			KMeansClassifier.fit(large_dataset)
+			errors[k][i] = KMeansClassifier.final_loss()
+			#title = "errorbar_center_plots_"
+			#KMeansClassifier.plot_centers(False,i)
+	# plot error bars
+	stds = np.std(errors,axis=1)
+	means = np.mean(errors,axis=1)
+	# print("means")
+	# print(means)
+	# print("stds")
+	# print(stds)
+	# means = [8292608.07290991, 7861215.38681844, 7375728.49642391]
+	# stds = [77.59220664, 20736.57757061, 15545.52424245]
+	plt.errorbar(K_list, means, yerr=stds)
+	plt.savefig('errorbars.png')
+	plt.show()
+
+# 2.3: K=10 and 5 restarts, show mean image
+def mean_images():
+	for i in range(NUM_RUNS):
+		title = 'kmeans_centers_k10_run'+str(i)
+		KMC = KMeans(K=10)
+		KMC.fit(large_dataset)
+		KMC.plot_centers(False,i)
+
+# 2.4: standardize data
+def standardized_images():
+	std_arr = np.std(large_dataset,axis=0)
+	std_arr[std_arr==0] = 1
+	norm_data = (large_dataset - np.mean(large_dataset,axis=0))/(std_arr)
+	#print(norm_data.mean())
+	#print(norm_data.std())
+
+	for i in range(NUM_RUNS):
+		title = 'kmeans_centers_normed_run' + str(i) + '_k'
+		KMC = KMeans(K=10)
+		KMC.fit(norm_data)
+		KMC.plot_centers(True, i)
+
+#error_bar()
+mean_images()
+#standardized_images()
 
 
+#########################################
+
+
+
+def centroid_dist(A, B):
+	na = A.shape[0]
+	nb = B.shape[0]
+	return distance.euclidean(np.mean(A,axis=0), np.mean(B,axis=0))
+	# return distance.euclidean(1/na * np.sum(A,axis=0), 1/nb * np.sum(B,axis=0))
+
+CENTROID = "centroid"
+MAX = "max"
+MIN = "min"
 class HAC(object):
-	def __init__(self, linkage):
+	def __init__(self, linkage, K):
 		self.linkage = linkage
-        
+		self.K = K
+		self.cluster_assignments = []
+		self.active_cluster_ids = []
+		self.dist_list = []
+		self.mean_images = []
+
+	def fit(self, X):
+		N = X.shape[0]
+		# assignments[N], which cluster data point n is in
+		assignments = np.asarray([i for i in range(N)]) 
+
+		# clusters[N], 1 if cluster ID n is still active
+		clusters = np.ones(N)
+		dist_mat = distance.cdist(X,X)
+		
+		n_active = N
+		print("N,K:", N, self.K)
+		count = 0
+		while n_active - 1 > self.K:
+			count += 1
+
+			#find closest clusters
+			min_dist = -1
+			closest = (-1,-1)
+
+			active_clusters = np.flatnonzero(clusters)
+			n_active = active_clusters.size
+
+			for i in range(n_active): # for cluster i
+				for j in range(i+1, n_active): # for cluster j > i
+					# update best distance
+					a = active_clusters[i]
+					b = active_clusters[j]
+
+					#min-linkage
+					if self.linkage == MIN:
+						curr_dist = np.amin(dist_mat[assignments == a][:,assignments == b])
+
+					#max-linkage
+					elif self.linkage == MAX:
+						curr_dist = np.amax(dist_mat[assignments == a][:,assignments == b])
+
+					#centroid-linkage
+					elif self.linkage == CENTROID:
+						curr_dist = centroid_dist(X[assignments == a],X[assignments == b])
+
+					if min_dist == -1 or curr_dist < min_dist:
+						min_dist = curr_dist
+						closest = (a,b)
+				
+			self.dist_list.append(min_dist)
+			a = closest[0]
+			b = closest[1]
+			# merge closest clusters
+			# merge b into a
+			for i in range(N):
+				if assignments[i] == b:
+					assignments[i] = a
+			clusters[b] = 0
+			#print("iteration ",count)
+			#print("merge ", a, b)
+			#print("min_dist ", min_dist)
+
+
+		self.active_cluster_ids = clusters
+		self.cluster_assignments = assignments
+		self.dist_list = np.asarray(self.dist_list)
+		# print("active cluster ids")
+		# print(self.active_cluster_ids)
+		# print("cluster assignments")
+		# print(self.cluster_assignments)
+		# print("dist_list")
+		# print(self.dist_list)
+
+	# this is just to save time, when I'm trying to fix my plotting code
+	def stored_fit(self,X):
+		if self.linkage == MIN:
+			self.active_cluster_ids = [1.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,1.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.]
+			self.cluster_assignments = [0,0,0,0,0,0,0,7,0,0,0,0,0,7,0,0,0,17
+				,0,0,0,0,0,0,0,0,0,0,7,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,51,0,0
+				,0,0,0,0,0,0,0,0,0,63,0,65,51,0,63,0,0,0
+				,0,0,0,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0
+				,0,0,0,0,51,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,51,0,0,51,0,0,0,0,122,0,0,0
+				,126,0,0,0,0,0,0,0,0,0,51,0,122,0,0,0,122,0
+				,0,0,0,0,0,0,0,0,0,0,0,51,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,51,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,51,0,0,0,0,0,51,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,51,0,0,51]
+			self.dist_list = [419.58312645,636.2460216,638.28990279,638.45203422,743.80172089
+				,748.31610968,809.46834404,826.62325155,837.98269672,875.00685712
+				,892.56540377,896.16627921,935.00160428,940.92029418,943.24864166
+				,955.24237762,960.96878201,966.40053808,968.22724605,969.46892678
+				,971.93261083,980.28261231,1013.00098717,1025.3418942,1026.06335087
+				,1038.31016561,1045.82120843,1050.81349439,1056.64989471,1060.7478494
+				,1067.07731679,1072.8676526,1082.7086404,1088.16496911,1091.62401952
+				,1097.67435973,1100.28405423,1106.96883425,1127.29055704,1132.94042209
+				,1138.52755786,1150.75279709,1152.18401308,1152.34283093,1152.73891233
+				,1153.45481056,1160.48825931,1162.07013558,1174.29340456,1181.50285653
+				,1188.37157489,1195.31334804,1202.11064383,1204.72154459,1224.21035774
+				,1227.20373207,1228.37331459,1235.90654987,1247.38045519,1253.02553845
+				,1254.56207499,1266.17218418,1272.76038593,1274.03689115,1275.08235028
+				,1280.34253229,1280.72362358,1282.36578245,1284.05568415,1288.5747941
+				,1292.90293526,1300.11461033,1301.18138628,1304.64707872,1304.80688226
+				,1305.57611804,1316.34455976,1322.94066382,1327.88591377,1350.66057912
+				,1350.69019394,1352.61339636,1360.75677474,1360.99742836,1363.692414
+				,1367.5112431,1369.5575928,1370.76657386,1374.94654442,1375.34904661
+				,1376.0432406,1376.30410884,1378.27392053,1383.7134819,1387.51396389
+				,1388.00576368,1400.87436981,1403.37592968,1407.57202302,1409.23809202
+				,1410.20424053,1411.18248288,1425.57006141,1436.68124509,1439.80623696
+				,1442.30544615,1451.600496,1461.37572171,1462.75732779,1464.66480807
+				,1486.19413268,1491.15961587,1493.31577371,1496.71039283,1496.97160962
+				,1497.59473824,1500.85542275,1502.19972041,1503.06786274,1504.57269681
+				,1509.73540728,1511.57864499,1512.22782675,1512.78980695,1514.57254696
+				,1517.57306249,1519.55421094,1527.82786989,1529.00752124,1534.50806449
+				,1537.08034923,1540.86793724,1546.05983067,1550.70016444,1552.36947922
+				,1553.35025027,1555.61466951,1558.83129299,1559.89198344,1560.9887892
+				,1561.94270061,1563.15738171,1563.81584594,1567.80036995,1570.41013751
+				,1574.43100833,1577.07482384,1580.7577297,1580.75994382,1581.32665822
+				,1581.49739171,1592.05370512,1594.90720733,1596.46954246,1602.72923477
+				,1606.54940789,1607.80533648,1613.96499342,1621.08266291,1625.74013914
+				,1627.62065605,1638.77454215,1645.00151976,1645.48868121,1648.75407505
+				,1657.25978652,1658.56353511,1662.94978878,1664.03575683,1666.42071519
+				,1669.00928697,1669.76495352,1676.40895965,1679.29389923,1683.0641699
+				,1693.68208351,1695.24835939,1696.13914524,1709.00058514,1711.03506685
+				,1715.00233236,1715.37284577,1715.43726204,1722.16694893,1728.66798432
+				,1735.52787359,1735.67278022,1736.71960892,1739.90143399,1744.51511888
+				,1747.32796006,1754.2841845,1756.62801982,1760.82622652,1761.29582978
+				,1766.41614576,1772.07956932,1774.95295712,1776.64374594,1777.37840653
+				,1778.41839847,1779.80869759,1781.88158978,1783.06982477,1788.18091926
+				,1792.62098615,1797.62621254,1801.04441922,1812.37882354,1813.04467678
+				,1821.03761631,1824.11457973,1826.21137878,1832.50538881,1833.34803024
+				,1834.39254251,1836.48876936,1838.34572374,1839.79237959,1841.69460009
+				,1844.13611211,1861.04379314,1873.57706006,1891.92653134,1896.75802358
+				,1902.47233883,1903.82404649,1908.43260295,1911.71493691,1914.48818226
+				,1921.65839836,1927.73675589,1929.28821071,1937.67644358,1940.62876409
+				,1942.29245996,1951.02075847,1969.62940677,1971.35258135,1977.46150405
+				,1985.14306789,1987.41918075,2004.7528526,2004.83739989,2007.36120317
+				,2017.31207303,2025.74085213,2027.3398827,2030.08595877,2045.92204153
+				,2047.89306361,2068.37037302,2071.13736869,2075.51921215,2081.10643649
+				,2083.56737352,2098.29311584,2108.54333605,2109.50207395,2117.44704774
+				,2118.61015763,2120.65485169,2126.04868242,2127.49900117,2131.22148075
+				,2135.64416512,2137.59514408,2144.76735335,2152.56707213,2178.26720124
+				,2184.57570251,2197.32155134,2199.28170092,2226.84777208,2227.38793209
+				,2241.83853121,2251.35559164,2260.48534611,2287.14888016,2296.04268253
+				,2296.98889854,2306.96510593,2308.53178449,2318.54674311,2354.03313486
+				,2354.15632446,2359.1212347,2396.87880378,2508.60698397,2543.76708839
+				,2553.75938569]
+		if self.linkage == MAX:
+			self.active_cluster_ids = [1.,0.,1.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.]
+			self.cluster_assignments = [0,0,2,2,0,5,0,5,2,2,2,5,2,5,5,2,0,5
+				,5,2,2,5,5,2,2,5,26,2,5,5,30,30,30,30,30,30
+				,30,30,30,30,30,30,30,30,30,30,30,30,30,30,30,51,30,30
+				,30,30,30,30,30,30,26,30,2,51,64,26,30,64,51,64,26,26
+				,2,26,30,30,64,64,64,26,80,80,80,64,80,30,30,80,80,80
+				,2,2,51,2,51,51,2,2,51,51,51,2,51,51,2,51,51,2
+				,51,30,51,30,30,2,51,2,2,51,2,2,51,30,122,30,30,26
+				,122,30,26,30,26,30,30,30,30,30,30,30,122,30,26,30,122,30
+				,30,30,51,30,30,30,26,30,30,30,30,30,30,2,30,30,30,51
+				,30,26,30,30,51,30,51,30,2,51,30,5,51,26,51,30,51,51
+				,26,51,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26
+				,26,26,26,26,26,26,30,26,30,26,26,26,30,30,30,30,51,30
+				,30,51,30,30,30,30,30,30,30,30,51,30,30,30,51,30,51,30
+				,30,30,30,30,51,30,30,30,30,30,30,30,30,30,30,30,26,30
+				,26,26,30,30,30,30,30,30,30,30,26,51,30,30,51,30,51,30
+				,30,30,30,30,30,30,51,51,30,51,30,26,30,30,30,51,30,30
+				,30,51,30,30,30,30,30,30,26,30,30,51]
+			self.dist_list = [419.58312645,636.2460216,638.28990279,638.45203422,743.80172089
+				,788.81620166,826.62325155,837.98269672,875.00685712,892.56540377
+				,896.16627921,935.00160428,940.92029418,955.24237762,966.40053808
+				,968.16889023,971.93261083,1013.00098717,1050.81349439,1056.64989471
+				,1062.44858699,1067.07731679,1082.7086404,1090.26051933,1091.62401952
+				,1097.67435973,1100.28405423,1102.62232881,1106.96883425,1114.06777173
+				,1127.29055704,1130.4645063,1132.94042209,1138.52755786,1138.69618424
+				,1150.75279709,1152.18401308,1152.34283093,1162.07013558,1188.37157489
+				,1202.11064383,1204.72154459,1221.14331673,1227.20373207,1228.37331459
+				,1235.90654987,1240.55914813,1247.38045519,1254.56207499,1272.76038593
+				,1275.08235028,1284.05568415,1288.5747941,1292.90293526,1300.26881836
+				,1300.50374855,1304.64707872,1304.80688226,1305.57611804,1309.73012487
+				,1360.99742836,1362.60669307,1363.692414,1367.5112431,1369.5575928
+				,1372.28094791,1375.17780669,1376.0432406,1376.30410884,1380.5788641
+				,1387.51396389,1391.09956509,1400.84510207,1404.27383369,1415.25934019
+				,1435.6218165,1448.05800989,1455.63903493,1464.66480807,1477.9455335
+				,1491.15961587,1497.59473824,1498.05440489,1503.06786274,1504.57269681
+				,1509.287249,1510.11953169,1512.22782675,1512.78980695,1514.25328132
+				,1522.90774507,1529.00752124,1531.72484474,1532.02317215,1534.50806449
+				,1537.08034923,1550.70016444,1555.61466951,1558.83129299,1559.89198344
+				,1560.28971669,1563.15738171,1567.37264235,1575.41803976,1577.55602119
+				,1580.7577297,1581.49739171,1584.46678728,1586.76116665,1594.90720733
+				,1601.27168213,1602.72923477,1606.54940789,1607.21062714,1619.82745995
+				,1634.33319736,1648.32187391,1661.61547898,1662.94978878,1663.2594506
+				,1666.42071519,1669.00928697,1669.76495352,1673.67440083,1675.37279434
+				,1676.12946994,1682.69783384,1683.0641699,1684.17041893,1695.24835939
+				,1696.63048422,1697.38033452,1697.78414411,1703.32879973,1709.00058514
+				,1715.43726204,1716.21269078,1719.91133492,1722.16694893,1728.53608583
+				,1728.66798432,1735.67278022,1739.90143399,1742.34870218,1747.64183974
+				,1749.37817524,1754.2841845,1755.98917992,1766.03255916,1777.37840653
+				,1779.80869759,1780.1564538,1783.0011217,1783.06982477,1813.04467678
+				,1821.03761631,1822.96955542,1823.17415515,1824.11457973,1826.21137878
+				,1828.82366564,1841.25446367,1856.46572821,1861.04379314,1876.38269018
+				,1885.95837706,1891.92653134,1902.83131149,1903.82404649,1907.70071028
+				,1911.1057009,1913.16648518,1914.70180446,1916.51584914,1927.73675589
+				,1932.36202612,1934.99276484,1938.68357397,1939.76673855,1940.4347451
+				,1948.08624039,1951.02075847,1966.37331145,1968.1760592,1968.71658702
+				,1977.31712176,1983.9954637,1986.71135296,1987.41918075,1988.64476466
+				,1993.20947218,1993.76302504,2006.27241421,2017.31207303,2032.18970571
+				,2036.74912544,2037.1509517,2043.55768208,2053.86489332,2071.13736869
+				,2085.17864942,2098.29311584,2105.58851631,2120.65485169,2122.75646272
+				,2130.32298021,2131.6615585,2131.94699746,2132.68375527,2134.41561089
+				,2145.21467457,2146.71749422,2149.72463353,2175.46799563,2182.91685595
+				,2183.00435181,2191.33703478,2199.5290405,2205.13741068,2220.01216213
+				,2223.62586781,2227.39646224,2227.55987574,2228.55670783,2232.45313501
+				,2241.24987451,2256.51944375,2261.43007851,2269.19765556,2278.94295672
+				,2280.68805407,2285.44153283,2289.6698452,2306.43686235,2307.5086132
+				,2320.16421833,2327.1938037,2336.80059055,2343.62390327,2360.48575509
+				,2360.72976005,2365.02431277,2372.43672202,2383.96833033,2405.33012287
+				,2411.2310134,2424.33991016,2433.51104374,2455.47327414,2460.56903988
+				,2493.41051574,2501.24409045,2502.25118643,2516.07631045,2524.01703639
+				,2551.6384932,2560.89710844,2561.54679832,2579.75192606,2592.64594575
+				,2595.82915462,2605.11170586,2615.68365824,2625.27484275,2632.22947328
+				,2636.00322458,2654.83878983,2672.9128306,2684.97094956,2690.33733944
+				,2692.74599619,2693.63471911,2694.57993016,2726.68241642,2759.0882552
+				,2764.09261784,2787.05256499,2810.60545079,2818.53561269,2858.20293191
+				,2879.18825366,2892.47402754,2892.81523779,2919.66453552,2929.38969753
+				,2990.04732404,3037.44777733,3050.90347274,3068.40626384,3098.06262041
+				,3141.42786007]
+		if self.linkage == CENTROID:
+			self.active_cluster_ids = [1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.
+				,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.]
+			self.cluster_assignments = [0,0,0,0,4,0,4,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,28,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,65,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0
+				,0,0,92,0,0,0,0,0,0,0,0,0,102,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,126,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,203,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+				,0,0,0,0,0,0,0,0,0,0,0,0]
+			self.dist_list = [419.58312645,543.92140976,638.28990279,638.45203422,699.46443798
+				,743.80172089,813.06349691,826.62325155,817.89285498,837.98269672
+				,854.06153825,875.00685712,892.56540377,896.16627921,935.00160428
+				,939.36024329,866.62892145,955.24237762,961.59619904,929.80578378
+				,966.40053808,971.93261083,975.29239205,980.28261231,905.72719403
+				,973.74460846,984.72068886,1004.41855817,1013.00098717,1042.84876926
+				,1050.81349439,954.11385589,1067.07731679,1004.79500397,1081.03075812
+				,1082.7086404,1091.62401952,1097.67435973,1106.96883425,1115.03957329
+				,1122.01938486,1127.29055704,1129.00667537,1129.74466142,1072.66406088
+				,1132.94042209,1125.07266432,1133.68876091,1138.52755786,1152.18401308
+				,1152.34283093,1162.07013558,1171.80992486,1188.37157489,1195.50930569
+				,1196.58764827,1202.11064383,1204.72154459,1203.59759333,1153.3433487
+				,1164.75225826,1121.88845257,1198.51281123,1206.10120268,1219.81791674
+				,1227.20373207,1193.47847116,1228.37331459,1124.75786283,1191.40766416
+				,1155.28346089,1244.8295064,1245.0912171,1254.56207499,1263.09728446
+				,1201.74770323,1233.63218156,1265.46593791,1271.59024454,1272.76038593
+				,1209.87633666,1182.27775689,1138.51631521,1284.05568415,1286.6591429
+				,1288.03773237,1267.06482777,1272.82666109,1284.75021616,1289.44543118
+				,1292.90293526,1300.87039238,1304.64707872,1259.4403519,1304.80688226
+				,1333.15560795,1339.14530163,1340.08339061,1329.99831076,1341.44919977
+				,1342.94345045,1353.38964488,1328.06575624,1355.60360172,1358.63958971
+				,1359.51887744,1360.99742836,1364.01743228,1375.57757566,1336.41205753
+				,1341.04623336,1376.0432406,1380.65806049,1382.87637282,1389.94221503
+				,1407.21555925,1408.48847809,1418.5028829,1420.65507474,1355.32848766
+				,1374.21795625,1320.91847765,1370.20143022,1376.68823123,1393.97846988
+				,1428.7944467,1415.1677239,1402.99064665,1396.6761457,1442.00624839
+				,1392.5893093,1385.2357164,1408.1441553,1415.23560007,1436.03207879
+				,1421.47559633,1444.91996126,1453.43771686,1464.66480807,1466.38464145
+				,1479.44035027,1370.84256329,1484.93807997,1487.71405251,1488.19288028
+				,1500.7425662,1503.06786274,1503.9271352,1508.55203417,1510.76362283
+				,1512.22782675,1452.60817519,1529.00752124,1534.50806449,1537.08034923
+				,1490.90568112,1544.62778688,1507.34464834,1509.13251158,1419.09358395
+				,1407.5565165,1543.06427527,1548.79740763,1550.70016444,1558.83129299
+				,1559.5401403,1560.17523054,1560.28971669,1526.52877286,1559.53671615
+				,1560.2620269,1523.8631186,1531.67998864,1562.65245256,1580.7577297
+				,1581.32665822,1583.17047408,1590.35383903,1591.09370885,1594.90720733
+				,1600.91575356,1602.72923477,1474.99898305,1479.76687353,1569.06093044
+				,1603.6032084,1489.54392722,1606.54940789,1478.22676588,1608.8202967
+				,1612.24849442,1611.45843032,1617.89462922,1629.21303677,1633.74143553
+				,1634.60729229,1537.9972515,1647.66163015,1651.56884599,1665.62743526
+				,1664.73658906,1665.70489583,1666.42071519,1614.63664643,1623.57777567
+				,1591.48289131,1661.93782423,1669.00928697,1568.72945723,1669.76495352
+				,1682.62128912,1690.34019875,1692.64127918,1696.63048422,1662.91265555
+				,1508.50949223,1698.89162397,1702.41640534,1708.57744191,1676.28171857
+				,1709.72395289,1716.62100263,1677.73595614,1728.66798432,1596.27073205
+				,1505.15075923,1735.67278022,1740.97541343,1741.99732887,1753.40571102
+				,1774.86986629,1783.06982477,1734.60869982,1780.93524883,1789.75146536
+				,1791.37418912,1794.23903127,1795.45728748,1805.24467993,1805.02480296
+				,1812.37882354,1741.59359496,1644.65907687,1813.04467678,1675.18411274
+				,1815.64865787,1823.30083388,1826.21137878,1766.17935103,1762.3370758
+				,1827.97622775,1833.54320347,1852.65049028,1851.87997497,1858.98083212
+				,1866.29778609,1866.7774438,1868.45495718,1869.11369371,1807.63783358
+				,1872.05885601,1882.42787111,1884.78998349,1887.41360817,1890.60271516
+				,1896.75802358,1823.4886893,1816.16309271,1908.27979386,1922.14651493
+				,1933.1652429,1931.67091421,1940.46578028,1946.573736,1951.02075847
+				,1951.864017,1959.56200382,1963.58339876,1973.60127703,1972.37746383
+				,1982.53006361,1982.75911385,1993.76302504,1847.46792936,1823.00427155
+				,2032.97639394,2041.75153642,2048.19479722,2120.65485169,2049.80765743
+				,2157.41626107]
+	def plot_centers(self, X):
+		K = self.K
+		D = X.shape[1]
+		mean_images = np.zeros(shape=(K,D))
+		active_clusters = np.flatnonzero(self.active_cluster_ids)
+		print("plot active cluster size", active_clusters.size) # should be K = 10
+
+		for i in range(self.K):
+			# indices of all elements in cluster active_cluster[i]
+			inds = np.flatnonzero(self.cluster_assignments == active_clusters[i])
+			#print("indices")
+			#print(inds)
+			cluster_pts = X[inds,:]
+			#print(cluster_pts.shape)
+			#print(cluster_pts)
+			mean_images[i] = np.mean(cluster_pts, axis=0)
+			#print(mean_images[i].shape)
+			#print(mean_images[i])
+
+		fig = plt.figure()
+		ro, co = 2, 5
+		fig.suptitle(self.linkage + '-HAC cluster centers, K =' + str(K))
+		for i in range(10):
+			fig.add_subplot(ro,co,i+1)
+			plt.imshow(mean_images[i].reshape(28,28), cmap='Greys_r')
+		plt.savefig(self.linkage + '_HAC_centers_'+str(K)+'.png')
+		plt.show()
+		plt.close(fig)
+
+	def get_cluster_assignments(self):
+		return self.cluster_assignments
+
+	def get_active_clusters(self):
+		return self.active_cluster_ids
+
+	def get_dist_list(self):
+		return self.dist_list
+
+	def plot_distance_merges(self):
+		dist_list = self.get_dist_list()
+		N = len(dist_list)
+		print("plot_distance ", N)
+		py = dist_list
+		px = [i for i in range(N)]
+		fig = plt.figure()
+		plt.plot(px,py)
+		plt.savefig(self.linkage+'_hac_distance_vs_merge.png')
+		plt.show()
+		plt.close(fig)
+
+#hac = HAC(linkage = "max", K = 10)
+#hac.fit(small_dataset)
+#hac.plot_centers(small_dataset)
+
+stored_hac = []
+linkages = [MIN, MAX, CENTROID]
+
+def fit_hac():
+	stored_hac = []
+	
+	for i in range(3):
+		print(linkages[i])
+		hac = HAC(linkage = linkages[i], K = 10)
+		hac.fit(small_dataset)
+		#hac.stored_fit(small_dataset)
+		#hac.plot_centers(small_dataset)
+		hac.plot_distance_merges()
+		stored_hac.append(hac)
+
+	for i in range(3):
+		print(linkages[i])
+		stored_hac[i].plot_centers(small_dataset)
+		stored_hac[i].plot_distance_merges()
+
+#fit_hac()
+
+def make_heatmaps():
+	
+	N = small_dataset.shape[0]
+	print(N)
+
+	### k-means
+	confusion_matrix = np.zeros(shape=(10,10))
+	kmc = KMeans(K=10)
+	kmc.fit(small_dataset)
+	z = kmc.get_cluster_assignments()
+
+	for n in range(N):
+		j = small_labels[n]
+		i = np.where(z[n]==1)[0][0]
+		# print(n,i,j)
+		confusion_matrix[i][j] += 1
+
+	fig = plt.figure()
+	fig.suptitle("K-Means Heatmap")
+	ax = heatmap(confusion_matrix)
+	ax.set_xlabel("True Label")
+	ax.set_ylabel("Assigned Cluster")
+	plt.savefig("kmeans_confusion.png")
+	#plt.show()
+
+	# fit_hac()
+	stored_hac = []
+	for i in range(3):
+		hac = HAC(linkage = linkages[i], K = 10)
+		hac.fit(small_dataset)
+		#hac.plot_centers(small_dataset)
+		#hac.plot_distance_merges()
+		stored_hac.append(hac)
+
+	### hac-min
+	cluster_assignments = stored_hac[0].get_cluster_assignments()
+	active_clusters = stored_hac[0].get_active_clusters()
+	active_ids = np.flatnonzero(active_clusters)
+	print("HAC_MIN")
+	confusion_matrix = np.zeros(shape=(10,10))
+	print(cluster_assignments)
+	print(active_clusters)
+	print(active_ids)
+	for n in range(N):
+		j = small_labels[n]
+		print("cluster assignment ",cluster_assignments[n])
+		#print(np.where(active_clusters == cluster_assignments[n]))
+		i = np.where(active_ids == cluster_assignments[n])[0][0]
+		print("iteration ",n,i,j)
+		confusion_matrix[i][j] += 1
+
+	fig = plt.figure()
+	fig.suptitle("Min-HAC Heatmap")
+	ax = heatmap(confusion_matrix)
+	ax.set_xlabel("True Label")
+	ax.set_ylabel("Assigned Cluster")
+	plt.savefig("hac_min_confusion.png")
+
+	### hac-max
+	print("HAC MAX")
+	confusion_matrix = np.zeros(shape=(10,10))
+
+	cluster_assignments = stored_hac[1].get_cluster_assignments()
+	active_clusters = stored_hac[1].get_active_clusters()
+	active_ids = np.flatnonzero(active_clusters)
+
+	for n in range(N):
+		j = small_labels[n]
+		print("cluster assignment ",cluster_assignments[n])
+		#print(np.where(active_clusters == cluster_assignments[n]))
+		i = np.where(active_ids == cluster_assignments[n])[0][0]
+		print("iteration ",n,i,j)
+		confusion_matrix[i][j] += 1
+
+	fig = plt.figure()
+	fig.suptitle("Max-HAC Heatmap")
+	ax = heatmap(confusion_matrix)
+	ax.set_xlabel("True Label")
+	ax.set_ylabel("Assigned Cluster")
+	plt.savefig("hac_max_confusion.png")
+
+
+	#hac-centroid
+	print("HAC CENTROID")
+	confusion_matrix = np.zeros(shape=(10,10))
+
+	cluster_assignments = stored_hac[2].get_cluster_assignments()
+	active_clusters = stored_hac[2].get_active_clusters()
+	active_ids = np.flatnonzero(active_clusters)
+
+	for n in range(N):
+		j = small_labels[n]
+		print("cluster assignment ",cluster_assignments[n])
+		#print(np.where(active_clusters == cluster_assignments[n]))
+		i = np.where(active_ids == cluster_assignments[n])[0][0]
+		print("iteration ",n,i,j)
+		confusion_matrix[i][j] += 1
+
+	fig = plt.figure()
+	fig.suptitle("Centroid-HAC Heatmap")
+	ax = heatmap(confusion_matrix)
+	ax.set_xlabel("True Label")
+	ax.set_ylabel("Assigned Cluster")
+	plt.savefig("hac_centroid_confusion.png")
+	plt.show()
+
+
+#make_heatmaps()
