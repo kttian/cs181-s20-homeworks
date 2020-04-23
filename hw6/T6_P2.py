@@ -4,7 +4,7 @@ import numpy as np
 import gridworld
 
 # Change to False once part one (print_grid_representations) is done.
-run_part_one = True
+run_part_one = False
 
 # ----------------------------------------------------------------------- #
 #   Starter code for CS 181 2020 HW 6, Problem 2                          #
@@ -154,7 +154,7 @@ def print_grid_representations():
     """
     Please complete the tasks in this function.
     Do not call any functions in gridworld.py.
-    Your solution should only call helper functions in T6_P3.py.
+    Your solution should only call helper functions in T6_P2.py.
     """
 
     # In Gridworld, each state on the grid can be represented using an
@@ -176,7 +176,7 @@ def print_grid_representations():
         # TODO 1: Write code to convert flattened index s to an unflattened index s_u.
         # You can check your answer by comparing your print statements to those above.
         # Your implementation must call a helper function in this file.
-        s_u = (0, 0)
+        s_u = unflatten_index(s)
         print(str(s) + ' is converted to ' + str(s_u))
 
     # Recall that when you take an action in Gridworld, you won't always
@@ -190,7 +190,15 @@ def print_grid_representations():
             # to only print when new_state has nonzero probability
             # p(new state | starting_state, a).
             # Your implementation must call a helper function in this file.
-            prb = 0.
+            """
+            def get_transition_prob(state1, action1, state2):
+
+            state1 and state2 are flattened states.
+            action1 represents an index into the actions array.
+
+            Returns p(state2 | state1, action1).
+            """
+            prb = get_transition_prob(starting_state, a, new_state)
             if prb > 0:
                 print('Going from ' + str(unflatten_index(starting_state)) + ' to '
                     + str(unflatten_index(new_state)) + ' when taking action '
@@ -208,6 +216,26 @@ def policy_evaluation(pi, gamma, theta = 0.1):
     """
     # TODO: Complete this function.
     V = np.zeros(state_count)
+    
+    delta = theta + 1000
+    iter = 1000
+    i = 0
+    while delta >= theta:
+        V_new = np.zeros(state_count)
+        print("delta: ", delta)
+        i += 1
+        sum = 0
+        for s in range(state_count):
+            a = int(pi[s])
+            r = get_reward(s,a)
+            sum = r
+            for sp in range(state_count):
+                p = get_transition_prob(s, a, sp)
+                sum += gamma * p * V[sp]
+            V_new[s] = sum
+        delta = np.max(abs(V - V_new))
+        V = V_new
+
     return V
 
 def update_policy_iteration(V, pi, gamma, theta = 0.1):
@@ -224,6 +252,23 @@ def update_policy_iteration(V, pi, gamma, theta = 0.1):
     V_new = policy_evaluation(pi, gamma, theta)
     pi_new = np.zeros(state_count)
 
+    for s in range(state_count):
+        best_sum = -100000
+        best_a = 0
+        sum = 0
+        for a in range(action_count):
+            r = get_reward(s,a)
+            sum = r
+            for sp in range(state_count):
+                p = get_transition_prob(s, a, sp)
+                sum += gamma * p * V_new[sp]
+            
+            if sum > best_sum:
+                best_sum = sum
+                best_a = a
+
+        pi_new[s] = int(best_a)
+
     return V_new, pi_new
 
 def update_value_iteration(V, pi, gamma):
@@ -239,6 +284,33 @@ def update_value_iteration(V, pi, gamma):
     # TODO: Complete this function.
     V_new = np.zeros(state_count)
     pi_new = np.zeros(state_count)
+
+    # iteratively find V*(s)
+
+    for s in range(state_count):
+        max = -1
+        sum = 0
+        for a in range(action_count):
+            sum = get_reward(s,a)
+            for sp in range(state_count):
+                p = get_transition_prob(s, a, sp)
+                sum += gamma * p * V[sp]
+            if sum > max:
+                max = sum
+        V_new[s] = max
+
+
+    # find pi*(s) with equation
+    for s in range(state_count):
+        best_a = 0
+        max = 0
+        for a in range(action_count):
+            sum = get_reward(s,a)
+            for sp in range(state_count):
+                p = get_transition_prob(s,a,sp)
+                sum += gamma * p * V_new[sp]
+            best_a = a
+        pi_new[s] = int(best_a)
 
     return V_new, pi_new
 
@@ -301,9 +373,9 @@ if run_part_one:
 
 else:
     print('Beginning policy iteration.')
-    learn_strategy(planning_type=POLICY_ITER, max_iter = 10, print_every = 2)
+    learn_strategy(planning_type=POLICY_ITER, max_iter = 10, print_every = 1)
     print('Policy iteration complete.')
 
     print('Beginning value iteration.')
-    learn_strategy(planning_type=VALUE_ITER, max_iter = 10, print_every = 2)
+    # learn_strategy(planning_type=VALUE_ITER, max_iter = 25, print_every = 1, ct = 0.1)
     print('Value iteration complete.\n')
